@@ -92,9 +92,9 @@ public:
      *
      * \param white_line the line is white on black background instead of default black on white background.
      * \param channels_mask which channels to read. Example:
-     *        (1 << 0) | (1 << 2) - read channels 0 and 2. Two values will be appended to the results vector.
-     *        The values will be in the order of their channel id - value from channel 0 will always be before
-     *        value from the channel 2 in this example.
+     *        (1 << 0) | (1 << 2) - read channels 0 and 2. The values will be used in a linear
+     *        manner, and ordered by the channel id - if channels 0, 1 and 2 are used,
+     *        the channel 1 is considered the "middle", 0 is the -1 result value and 2 is the 1.
      * \param noise_limit values below this threshold will be considered noise and ignored.
      *        The value is a fraction, 0.05 == 5% == (1023*0.05) == values < ~50 will be ignored.
      * \param line_threshold values above this threshild will be considered "on the line".
