@@ -1,0 +1,21 @@
+{
+    "name": "Esp32-Mcp3008-LineSensor",
+    "keywords": "ESP32, MCP3008, Line, Sensor",
+    "description": "Library for Espressif ESP32 based line followers, using the MCP3008 ADC chip.",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/RoboticsBrno/Esp32-Mcp3008-LineSensor.git"
+    },
+    "authors": [
+        {
+            "name": "Vojtěch Boček",
+            "email": "vbocek@gmail.com",
+            "url": "http://www.robotikabrno.cz",
+		    "maintainer": true
+        }
+    ],
+    "version": "0.0.1",
+    "frameworks": [ "espidf", "arduino" ],
+    "platforms": "espressif32"
+}
