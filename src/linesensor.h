@@ -14,7 +14,7 @@ class LineSensorCalibrator;
  *
  * This class is not thread-safe, you have to make sure the methods are called
  * from one thread at a time only.
- * The @{install} method has to be called before you can use any other methods.
+ * The install() method has to be called before you can use any other methods.
  */
 class LineSensor {
 public:
@@ -53,7 +53,7 @@ public:
      * \brief The LineSensor's calibration data
      *
      * You should have no reason to edit these values directly,
-     * use @{LineSensorCalibrator} instead.
+     * use LineSensorCalibrator instead.
      */
     struct CalibrationData {
         CalibrationData() {
@@ -68,7 +68,7 @@ public:
     };
 
     LineSensor();
-    virtual ~LineSensor(); //!< The @{uninstall} method is called from the destructor.
+    virtual ~LineSensor(); //!< The uninstall() method is called from the destructor.
 
     /**
      * \brief Initialize the SPI bus. Must be called before any other methods,
@@ -88,39 +88,39 @@ public:
      */
     esp_err_t uninstall();
 
-    uint8_t getChannelsMask() const { return m_channels_mask; } //<! Get the channel mask, specified in @{Config}
+    uint8_t getChannelsMask() const { return m_channels_mask; } //!< Get the channel mask, specified in Config::channels_mask
 
     /**
      * \brief Start the sensor line calibration procedure.
      *
-     * \return @{LineSensorCalibrator} object used for calibration.
+     * \return LineSensorCalibrator object used for calibration.
      */
     LineSensorCalibrator startCalibration();
 
     /**
      * \brief Get the calibration data used by linesensor, feel free to save this
-     *        structure somewhere and load it afterwards using @{setCalibration}.
+     *        structure somewhere and load it afterwards using setCalibration().
      *
-     * \return @{CalibrationData} reference
+     * \return CalibrationData reference
      */
     const CalibrationData& getCalibration() const { return m_calibration; }
 
     /**
      * \brief Set calibration data used by the line sensor.
      *
-     * \param data the calibration data obtained previously from @{getCalibration}.
+     * \param data the calibration data obtained previously from getCalibration().
      */
     void setCalibration(const CalibrationData& data) { m_calibration = data; }
 
     /**
-     * \brief Read values from the chip. Returns values in range <0; @{MAX_VAL}>.
+     * \brief Read values from the chip. Returns values in range <0; LineSensor::MAX_VAL>.
      *
      * \param results the results will be APPENDED to this vector.
      *        It will be unchanged unless the ESP_OK result is returned (except possibly its capacity).
-     *        Between 0 and @{CHANNELS} values are appended, depending on the @{channels_mask} param.
+     *        Between 0 and LineSensor::CHANNELS values are appended, depending on Config::channels_mask.
      * \param useCalibration scale sensor values with calibration data. In default, uncalibrated state,
      *        read returns the same values regardless of this param.
-     *        Use @{startCalibration} and @{LineSensorCalibrator} to generate the calibration data.
+     *        Use startCalibration() and LineSensorCalibrator to generate the calibration data.
      * \param differential return differential readings, as specified in the MCP3008 datasheet.
      * \return ESP_OK or any error code encountered during reading.
      *         Will return ESP_FAIL if called when not installed.
@@ -128,9 +128,9 @@ public:
     esp_err_t read(std::vector<uint16_t>& results, bool useCalibration = true, bool differential = false) const;
 
     /**
-     * \brief See the other @{read} method.
+     * \brief See the other read(std::vector<uint16_t>&, bool, bool) const method.
      *
-     * \param dest array MUST be big enough to accomodate all the channels specified by @{channels_mask}!
+     * \param dest array MUST be big enough to accomodate all the channels specified by Config::channels_mask!
      */
     esp_err_t read(uint16_t *dest, bool useCalibration = true, bool differential = false) const;
 
@@ -145,11 +145,11 @@ public:
      *        The value is a fraction, 0.20 == 20% == (1023*0.20) == 200.
      * \return A number in range <-1,1>, where -1 means the line is under the channel with smallest ID,
      *         0 means in the middle and 1 means it is under the one with the greatest ID.
-     *         Examples, assuming using 8 channels:
-     *             -1.0: under channel 0
-     *              0.0: under channel 3-4
-     *              1.0: under channel 7
-     *         Returns NaN when the line is not found (see @{line_threshold}).
+     *         Examples, assuming using 8 channels: \n
+     *             -1.0: under channel 0 \n
+     *              0.0: under channel 3-4 \n
+     *              1.0: under channel 7 \n
+     *         Returns NaN when the line is not found (see \p line_threshold).
      */
     float readLine(bool white_line = false, float noise_limit=0.05f, float line_threshold=0.20f) const;
 
@@ -169,15 +169,15 @@ private:
  * \brief This class represents a single sensor calibration session.
  *
  * Typical calibration session consists of moving the sensors over
- * the line while calling the @{record} method over and over,
+ * the line while calling the record() method over and over,
  * and then storing the data to the LineSensor instance via the
- * @{save} method.
+ * save() method.
  *
- * The parent LineSensor is modified only by the @{save} method.
+ * The parent LineSensor is modified only by the save() method.
  * This calibrator can be reused multiple times by calling
- * the @{reset} method between each session.
+ * the reset() method between each session.
  *
- * Instances of this class are created via LineSensor's @{startCalibration}.
+ * Instances of this class are created via LineSensor's startCalibration().
  * It must not outlive the parent LineSensor object.
  */
 class LineSensorCalibrator {
@@ -192,7 +192,7 @@ public:
      *
      * Call this repeatedly while moving the sensors over the line.
      *
-     * \return potential error returned by LineSensor's @{read}
+     * \return potential error returned by LineSensor's read()
      */
     esp_err_t record();
 
