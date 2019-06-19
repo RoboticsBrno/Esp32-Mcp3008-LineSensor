@@ -98,7 +98,7 @@ esp_err_t LineSensor::read(uint16_t *dest, bool differential, uint8_t channels_m
         t.flags = SPI_TRANS_USE_RXDATA | SPI_TRANS_USE_TXDATA;
         t.length = 3 * 8;
         t.tx_data[0] = 1;
-        t.tx_data[1] = (differential << 7) | ((i & 0x07) << 4);
+        t.tx_data[1] = (!differential << 7) | ((i & 0x07) << 4);
 
         esp_err_t res = spi_device_queue_trans(m_spi, &transactions[i], 100);
         if(res != ESP_OK)
