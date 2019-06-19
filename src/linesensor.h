@@ -7,11 +7,14 @@
 
 namespace mcp3008 {
 
+class LineSensorCalibrator;
+
 /**
  * \brief The LineSensor device - one MCP3008 chip.
- *        It is not thread-safe, you have to make sure the methods are called
- *        from one thread at a time only.
- *        The @{install} method has to be called before you can use any other methods.
+ *
+ * This class is not thread-safe, you have to make sure the methods are called
+ * from one thread at a time only.
+ * The @{install} method has to be called before you can use any other methods.
  */
 class LineSensor {
 public:
@@ -46,6 +49,24 @@ public:
         gpio_num_t pin_sck;
     };
 
+    /**
+     * \brief The LineSensor's calibration data
+     *
+     * You should have no reason to edit these values directly,
+     * use @{LineSensorCalibrator} instead.
+     */
+    struct CalibrationData {
+        CalibrationData() {
+            for(int i = 0; i < CHANNELS; ++i) {
+                min[i] = 0;
+                range[i] = MAX_VAL;
+            }
+        }
+
+        uint16_t min[CHANNELS];
+        uint16_t range[CHANNELS];
+    };
+
     LineSensor();
     virtual ~LineSensor(); //!< The @{uninstall} method is called from the destructor.
 
@@ -67,24 +88,51 @@ public:
      */
     esp_err_t uninstall();
 
+    uint8_t getChannelsMask() const { return m_channels_mask; } //<! Get the channel mask, specified in @{Config}
+
+    /**
+     * \brief Start the sensor line calibration procedure.
+     *
+     * \return @{LineSensorCalibrator} object used for calibration.
+     */
+    LineSensorCalibrator startCalibration();
+
+    /**
+     * \brief Get the calibration data used by linesensor, feel free to save this
+     *        structure somewhere and load it afterwards using @{setCalibration}.
+     *
+     * \return @{CalibrationData} reference
+     */
+    const CalibrationData& getCalibration() const { return m_calibration; }
+
+    /**
+     * \brief Set calibration data used by the line sensor.
+     *
+     * \param data the calibration data obtained previously from @{getCalibration}.
+     */
+    void setCalibration(const CalibrationData& data) { m_calibration = data; }
+
     /**
      * \brief Read values from the chip. Returns values in range <0; @{MAX_VAL}>.
      *
      * \param results the results will be APPENDED to this vector.
      *        It will be unchanged unless the ESP_OK result is returned (except possibly its capacity).
      *        Between 0 and @{CHANNELS} values are appended, depending on the @{channels_mask} param.
+     * \param useCalibration scale sensor values with calibration data. In default, uncalibrated state,
+     *        read returns the same values regardless of this param.
+     *        Use @{startCalibration} and @{LineSensorCalibrator} to generate the calibration data.
      * \param differential return differential readings, as specified in the MCP3008 datasheet.
      * \return ESP_OK or any error code encountered during reading.
      *         Will return ESP_FAIL if called when not installed.
      */
-    esp_err_t read(std::vector<uint16_t>& results, bool differential = false);
+    esp_err_t read(std::vector<uint16_t>& results, bool useCalibration = true, bool differential = false) const;
 
     /**
      * \brief See the other @{read} method.
      *
      * \param dest array MUST be big enough to accomodate all the channels specified by @{channels_mask}!
      */
-    esp_err_t read(uint16_t *dest, bool differential = false);
+    esp_err_t read(uint16_t *dest, bool useCalibration = true, bool differential = false) const;
 
     /**
      * \brief Try to determine a black line's position under the sensors.
@@ -103,15 +151,59 @@ public:
      *              1.0: under channel 7
      *         Returns NaN when the line is not found (see @{line_threshold}).
      */
-    float readLine(bool white_line = false, float noise_limit=0.05f, float line_threshold=0.20f);
+    float readLine(bool white_line = false, float noise_limit=0.05f, float line_threshold=0.20f) const;
 
 private:
     LineSensor(const LineSensor&) = delete;
 
-    bool m_installed;
+    int requestToChannel(int request) const;
+
+    CalibrationData m_calibration;
     spi_device_handle_t m_spi;
     spi_host_device_t m_spi_dev;
+    bool m_installed;
     uint8_t m_channels_mask;
+};
+
+/**
+ * \brief This class represents a single sensor calibration session.
+ *
+ * Typical calibration session consists of moving the sensors over
+ * the line while calling the @{record} method over and over,
+ * and then storing the data to the LineSensor instance via the
+ * @{save} method.
+ *
+ * The parent LineSensor is modified only by the @{save} method.
+ * This calibrator can be reused multiple times by calling
+ * the @{reset} method between each session.
+ *
+ * Instances of this class are created via LineSensor's @{startCalibration}.
+ * It must not outlive the parent LineSensor object.
+ */
+class LineSensorCalibrator {
+    friend class LineSensor;
+public:
+    ~LineSensorCalibrator();
+
+    void reset(); //!< Reset this calibrator to the initial state.
+
+    /**
+     * \brief Record current sensor values.
+     *
+     * Call this repeatedly while moving the sensors over the line.
+     *
+     * \return potential error returned by LineSensor's @{read}
+     */
+    esp_err_t record();
+
+    void save(); //!< Store the calibrated values to the parent LineSensor.
+
+private:
+    LineSensorCalibrator(LineSensor& sensor);
+
+    LineSensor& m_sensor;
+    LineSensor::CalibrationData m_data;
+    uint16_t m_max[LineSensor::CHANNELS];
 };
 
 }; // namespace mcp3008

@@ -7,8 +7,7 @@
 
 namespace mcp3008 {
 
-LineSensor::LineSensor() : m_installed(false), m_spi(NULL), m_spi_dev(HSPI_HOST), m_channels_mask(0xFF) {
-
+LineSensor::LineSensor() : m_spi(NULL), m_spi_dev(HSPI_HOST), m_installed(false), m_channels_mask(0xFF) {
 }
 
 LineSensor::~LineSensor() {
@@ -66,7 +65,27 @@ esp_err_t LineSensor::uninstall() {
     return ESP_OK;
 }
 
-esp_err_t LineSensor::read(std::vector<uint16_t>& results, bool differential) {
+LineSensorCalibrator LineSensor::startCalibration() {
+    return LineSensorCalibrator(*this);
+}
+
+int LineSensor::requestToChannel(int request) const {
+    if(m_channels_mask == 0xFF)
+        return request;
+
+    int requested = 0;
+    for(int i = 0; i < CHANNELS; ++i) {
+        if(((1 << i) & m_channels_mask) != 0) {
+            if(requested++ == request)
+                return i;
+        }
+    }
+
+    ESP_LOGE(TAG, "Invalid requestToChannel call %d", request);
+    return 0;
+}
+
+esp_err_t LineSensor::read(std::vector<uint16_t>& results, bool useCalibration, bool differential) const {
     int requested = 0;
     for(int i = 0; i < CHANNELS; ++i) {
         if(((1 << i) & m_channels_mask) != 0)
@@ -76,7 +95,7 @@ esp_err_t LineSensor::read(std::vector<uint16_t>& results, bool differential) {
     const size_t orig_size = results.size();
     results.resize(orig_size + requested);
 
-    esp_err_t res = this->read(results.data() + orig_size, differential);
+    esp_err_t res = this->read(results.data() + orig_size, useCalibration, differential);
     if(res != ESP_OK) {
         results.resize(orig_size);
         return res;
@@ -84,7 +103,7 @@ esp_err_t LineSensor::read(std::vector<uint16_t>& results, bool differential) {
     return ESP_OK;
 }
 
-esp_err_t LineSensor::read(uint16_t *dest, bool differential) {
+esp_err_t LineSensor::read(uint16_t *dest, bool useCalibration, bool differential) const {
     if(!m_installed)
         return ESP_FAIL;
 
@@ -118,12 +137,22 @@ esp_err_t LineSensor::read(uint16_t *dest, bool differential) {
         }
 
         const int idx = (int)trans->user;
-        dest[idx] = ((trans->rx_data[1] & 0x03) << 8) | trans->rx_data[2];
+        uint16_t val = ((trans->rx_data[1] & 0x03) << 8) | trans->rx_data[2];
+        if(useCalibration) {
+            const int chan = requestToChannel(i);
+            if(val <= m_calibration.min[chan]) {
+                val = 0;
+            } else {
+                val = int32_t(val - m_calibration.min[chan]) * MAX_VAL / m_calibration.range[chan];
+                val = std::min(MAX_VAL, val);
+            }
+        }
+        dest[idx] = val;
     }
     return ESP_OK;
 }
 
-float LineSensor::readLine(bool white_line, float noise_limit, float line_threshold) {
+float LineSensor::readLine(bool white_line, float noise_limit, float line_threshold) const {
     std::vector<uint16_t> vals;
     auto res = this->read(vals, false);
     if(res != ESP_OK) {
@@ -159,6 +188,52 @@ float LineSensor::readLine(bool white_line, float noise_limit, float line_thresh
     const int16_t middle = float(vals.size()-1)/2 * MAX_VAL;
     const int16_t result = (weighted / sum) - middle;
     return std::min(1.f, std::max(-1.f, float(result) / float(middle)));
+}
+
+
+LineSensorCalibrator::LineSensorCalibrator(LineSensor& sensor) : m_sensor(sensor) {
+    reset();
+}
+
+LineSensorCalibrator::~LineSensorCalibrator() {
+
+}
+
+void LineSensorCalibrator::reset() {
+    for(int i = 0; i < LineSensor::CHANNELS; ++i) {
+        m_data.min[i] = LineSensor::MAX_VAL;
+        m_max[i] = 0;
+    }
+}
+
+esp_err_t LineSensorCalibrator::record() {
+    uint16_t vals[LineSensor::CHANNELS];
+    esp_err_t res = m_sensor.read(vals);
+    if(res != 0) {
+        return res;
+    }
+
+    int idx = 0;
+    const auto mask = m_sensor.getChannelsMask();
+    for(int i = 0; i < LineSensor::CHANNELS; ++i) {
+        if(((1 << i) & mask) == 0)
+            continue;
+
+        if(vals[idx] < m_data.min[i])
+            m_data.min[i] = vals[idx];
+        if(vals[idx] > m_max[i])
+            m_max[i] = vals[idx];
+        ++idx;
+    }
+
+    return ESP_OK;
+}
+
+void LineSensorCalibrator::save() {
+    for(int i = 0; i < LineSensor::CHANNELS; ++i) {
+        m_data.range[i] = m_max[i] - m_data.min[i];
+    }
+    m_sensor.setCalibration(m_data);
 }
 
 }; // namespace mcp3008
