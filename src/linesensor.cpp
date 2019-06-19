@@ -7,7 +7,7 @@
 
 namespace mcp3008 {
 
-LineSensor::LineSensor() : m_installed(false), m_spi(NULL), m_spi_dev(HSPI_HOST) {
+LineSensor::LineSensor() : m_installed(false), m_spi(NULL), m_spi_dev(HSPI_HOST), m_channels_mask(0xFF) {
 
 }
 
@@ -45,6 +45,7 @@ esp_err_t LineSensor::install(const LineSensor::Config& cfg) {
     }
 
     m_spi_dev = cfg.spi_dev;
+    m_channels_mask = cfg.channels_mask;
     m_installed = true;
     return ESP_OK;
 }
@@ -65,17 +66,17 @@ esp_err_t LineSensor::uninstall() {
     return ESP_OK;
 }
 
-esp_err_t LineSensor::read(std::vector<uint16_t>& results, bool differential, uint8_t channels_mask) {
+esp_err_t LineSensor::read(std::vector<uint16_t>& results, bool differential) {
     int requested = 0;
     for(int i = 0; i < CHANNELS; ++i) {
-        if(((1 << i) & channels_mask) != 0)
+        if(((1 << i) & m_channels_mask) != 0)
             ++requested;
     }
 
     const size_t orig_size = results.size();
     results.resize(orig_size + requested);
 
-    esp_err_t res = this->read(results.data() + orig_size, differential, channels_mask);
+    esp_err_t res = this->read(results.data() + orig_size, differential);
     if(res != ESP_OK) {
         results.resize(orig_size);
         return res;
@@ -83,14 +84,14 @@ esp_err_t LineSensor::read(std::vector<uint16_t>& results, bool differential, ui
     return ESP_OK;
 }
 
-esp_err_t LineSensor::read(uint16_t *dest, bool differential, uint8_t channels_mask) {
+esp_err_t LineSensor::read(uint16_t *dest, bool differential) {
     if(!m_installed)
         return ESP_FAIL;
 
     int requested = 0;
     spi_transaction_t transactions[CHANNELS] = { 0 };
     for(int i = 0; i < CHANNELS; ++i) {
-        if(((1 << i) & channels_mask) == 0)
+        if(((1 << i) & m_channels_mask) == 0)
             continue;
 
         auto &t = transactions[i];
@@ -122,9 +123,9 @@ esp_err_t LineSensor::read(uint16_t *dest, bool differential, uint8_t channels_m
     return ESP_OK;
 }
 
-float LineSensor::readLine(bool white_line, uint8_t channels_mask, float noise_limit, float line_threshold) {
+float LineSensor::readLine(bool white_line, float noise_limit, float line_threshold) {
     std::vector<uint16_t> vals;
-    auto res = this->read(vals, false, channels_mask);
+    auto res = this->read(vals, false);
     if(res != ESP_OK) {
         ESP_LOGE(TAG, "read() failed: %d", res);
         return std::nanf("");

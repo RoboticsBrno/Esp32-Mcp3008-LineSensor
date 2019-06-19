@@ -22,11 +22,12 @@ public:
      * \brief The LineSensor SPI configuration.
      */
     struct Config {
-        Config(int freq = 1350000, spi_host_device_t spi_dev = HSPI_HOST,
-            gpio_num_t pin_cs = GPIO_NUM_25, gpio_num_t pin_mosi = GPIO_NUM_33,
-            gpio_num_t pin_miso = GPIO_NUM_32, gpio_num_t pin_sck = GPIO_NUM_26) {
+        Config(gpio_num_t pin_cs = GPIO_NUM_25, gpio_num_t pin_mosi = GPIO_NUM_33,
+            gpio_num_t pin_miso = GPIO_NUM_32, gpio_num_t pin_sck = GPIO_NUM_26,
+            uint8_t channels_mask = 0xFF, int freq = 1350000, spi_host_device_t spi_dev = HSPI_HOST) {
             this->freq = freq;
             this->spi_dev = spi_dev;
+            this->channels_mask = channels_mask;
 
             this->pin_cs = pin_cs;
             this->pin_mosi = pin_mosi;
@@ -36,6 +37,8 @@ public:
 
         int freq; //!< SPI communication frequency
         spi_host_device_t spi_dev; //!< Which ESP32 SPI device to use.
+        uint8_t channels_mask; //!< Which channels to use, bit mask:
+                               //!< (1 << 0) | (1 << 2) == channels 0 and 2 only.
 
         gpio_num_t pin_cs;
         gpio_num_t pin_mosi;
@@ -71,30 +74,22 @@ public:
      *        It will be unchanged unless the ESP_OK result is returned (except possibly its capacity).
      *        Between 0 and @{CHANNELS} values are appended, depending on the @{channels_mask} param.
      * \param differential return differential readings, as specified in the MCP3008 datasheet.
-     * \param channels_mask which channels to read. Example:
-     *        (1 << 0) | (1 << 2) - read channels 0 and 2. Two values will be appended to the results vector.
-     *        The values will be in the order of their channel id - value from channel 0 will always be before
-     *        value from the channel 2 in this example.
      * \return ESP_OK or any error code encountered during reading.
      *         Will return ESP_FAIL if called when not installed.
      */
-    esp_err_t read(std::vector<uint16_t>& results, bool differential = false, uint8_t channels_mask = 0xFF);
+    esp_err_t read(std::vector<uint16_t>& results, bool differential = false);
 
     /**
      * \brief See the other @{read} method.
      *
      * \param dest array MUST be big enough to accomodate all the channels specified by @{channels_mask}!
      */
-    esp_err_t read(uint16_t *dest, bool differential = false, uint8_t channels_mask = 0xFF);
+    esp_err_t read(uint16_t *dest, bool differential = false);
 
     /**
      * \brief Try to determine a black line's position under the sensors.
      *
      * \param white_line the line is white on black background instead of default black on white background.
-     * \param channels_mask which channels to read. Example:
-     *        (1 << 0) | (1 << 2) - read channels 0 and 2. The values will be used in a linear
-     *        manner, and ordered by the channel id - if channels 0, 1 and 2 are used,
-     *        the channel 1 is considered the "middle", 0 is the -1 result value and 2 is the 1.
      * \param noise_limit values below this threshold will be considered noise and ignored.
      *        The value is a fraction, 0.05 == 5% == (1023*0.05) == values < ~50 will be ignored.
      * \param line_threshold values above this threshild will be considered "on the line".
@@ -108,7 +103,7 @@ public:
      *              1.0: under channel 7
      *         Returns NaN when the line is not found (see @{line_threshold}).
      */
-    float readLine(bool white_line = false, uint8_t channels_mask=0xFF, float noise_limit=0.05f, float line_threshold=0.20f);
+    float readLine(bool white_line = false, float noise_limit=0.05f, float line_threshold=0.20f);
 
 private:
     LineSensor(const LineSensor&) = delete;
@@ -116,6 +111,7 @@ private:
     bool m_installed;
     spi_device_handle_t m_spi;
     spi_host_device_t m_spi_dev;
+    uint8_t m_channels_mask;
 };
 
 }; // namespace mcp3008
