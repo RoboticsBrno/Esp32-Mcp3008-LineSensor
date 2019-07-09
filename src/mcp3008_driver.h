@@ -81,7 +81,7 @@ public:
     esp_err_t read(std::vector<uint16_t>& results, bool differential = false) const;
 
     /**
-     * \brief See the other read(std::vector<uint16_t>&, bool, bool) const method.
+     * \brief See the other read(std::vector<uint16_t>&, bool) const method.
      *
      * \param dest array MUST be big enough to accomodate all the channels specified by Config::channels_mask!
      */
@@ -96,10 +96,11 @@ public:
      */
     uint16_t readChannel(uint8_t channel, bool differential = false, esp_err_t *result = nullptr) const;
 
+protected:
+    int requestToChannel(int request) const;
+
 private:
     Driver(const Driver&) = delete;
-
-    int requestToChannel(int request) const;
 
     spi_device_handle_t m_spi;
     spi_host_device_t m_spi_dev;

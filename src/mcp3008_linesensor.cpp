@@ -24,7 +24,7 @@ LineSensorCalibrator LineSensor::startCalibration() {
 
 float LineSensor::readLine(bool white_line, float noise_limit, float line_threshold) const {
     std::vector<uint16_t> vals;
-    auto res = this->read(vals, false);
+    auto res = this->calibratedRead(vals);
     if(res != ESP_OK) {
         ESP_LOGE(TAG, "read() failed: %d", res);
         return std::nanf("");
@@ -71,6 +71,45 @@ bool LineSensor::setCalibration(const LineSensor::CalibrationData& data) {
 
     m_calibration = data;
     return true;
+}
+
+void LineSensor::calibrateResults(uint16_t *dest) const {
+    const auto mask = getChannelsMask();
+    int resIdx = 0;
+    for(int chan = 0; chan < CHANNELS; ++chan) {
+        if(((1 << chan) & mask) == 0)
+            continue;
+        dest[resIdx] = calibrateValue(chan, dest[resIdx]);
+        ++resIdx;
+    }
+}
+
+uint16_t LineSensor::calibrateValue(int chan, uint16_t val) const {
+    if(val <= m_calibration.min[chan]) {
+        return 0;
+    } else {
+        val = int32_t(val - m_calibration.min[chan]) * MAX_VAL / m_calibration.range[chan];
+        return std::min(MAX_VAL, val);
+    }
+}
+
+esp_err_t LineSensor::calibratedRead(std::vector<uint16_t>& results) const {
+    const auto res = read(results);
+    if(res == ESP_OK)
+        calibrateResults(results.data());
+    return res;
+}
+
+esp_err_t LineSensor::calibratedRead(uint16_t *dest) const {
+    const auto res = read(dest);
+    if(res == ESP_OK)
+        calibrateResults(dest);
+    return res;
+}
+
+uint16_t LineSensor::calibratedReadChannel(uint8_t channel, esp_err_t *result) const {
+    auto val = readChannel(channel, false, result);
+    return calibrateValue(channel, val);
 }
 
 LineSensorCalibrator::LineSensorCalibrator(LineSensor& sensor) : m_sensor(sensor) {

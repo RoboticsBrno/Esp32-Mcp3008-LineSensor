@@ -73,8 +73,37 @@ public:
      */
     float readLine(bool white_line = false, float noise_limit=0.05f, float line_threshold=0.20f) const;
 
+    /**
+     * \brief Same as Driver::read(), but returns calibrated result if possible
+     *
+     * \param results the results will be APPENDED to this vector.
+     *        It will be unchanged unless the ESP_OK result is returned (except possibly its capacity).
+     *        Between 0 and Driver::CHANNELS values are appended, depending on Config::channels_mask.
+     * \return ESP_OK or any error code encountered during reading.
+     *         Will return ESP_FAIL if called when not installed.
+     */
+    esp_err_t calibratedRead(std::vector<uint16_t>& results) const;
+
+    /**
+     * \brief See the other calibratedRead(std::vector<uint16_t>&) const method.
+     *
+     * \param dest array MUST be big enough to accomodate all the channels specified by Config::channels_mask!
+     */
+    esp_err_t calibratedRead(uint16_t *dest) const;
+
+    /**
+     * \brief Same as Driver::readChannel(), but returns calibrated data.
+     *
+     * \param result result code will be written here, may be null.
+     * \return measured value or 0xFFFF on error.
+     */
+    uint16_t calibratedReadChannel(uint8_t channel, esp_err_t *result = nullptr) const;
+
 private:
     LineSensor(const LineSensor&) = delete;
+
+    void calibrateResults(uint16_t *dest) const;
+    inline uint16_t calibrateValue(int chan, uint16_t val) const;
 
     CalibrationData m_calibration;
 };
