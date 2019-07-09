@@ -60,6 +60,18 @@ float LineSensor::readLine(bool white_line, float noise_limit, float line_thresh
     return std::min(1.f, std::max(-1.f, float(result) / float(middle)));
 }
 
+bool LineSensor::setCalibration(const LineSensor::CalibrationData& data) {
+    for(int i = 0; i < Driver::CHANNELS; ++i) {
+        if(data.min[i] > Driver::MAX_VAL || data.range[i] > Driver::MAX_VAL ||
+            data.min[i] + m_calibration.range[i] > Driver::MAX_VAL) {
+            ESP_LOGE(TAG, "invalid data in setCalibration at channel %d, ignoring calibration!", i);
+            return false;
+        }
+    }
+
+    m_calibration = data;
+    return true;
+}
 
 LineSensorCalibrator::LineSensorCalibrator(LineSensor& sensor) : m_sensor(sensor) {
     reset();

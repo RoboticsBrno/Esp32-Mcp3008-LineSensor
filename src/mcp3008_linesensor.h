@@ -50,8 +50,9 @@ public:
      * \brief Set calibration data used by the line sensor.
      *
      * \param data the calibration data obtained previously from getCalibration().
+     * \return if the result is false, calibration data were invalid (out of range)
      */
-    void setCalibration(const CalibrationData& data) { m_calibration = data; }
+    bool setCalibration(const CalibrationData& data);
 
     /**
      * \brief Try to determine a black line's position under the sensors.
