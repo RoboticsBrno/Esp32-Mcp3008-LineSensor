@@ -1,7 +1,7 @@
 #include <cmath>
 #include <esp_log.h>
 
-#include "driver.h"
+#include "mcp3008_driver.h"
 
 #define TAG "Mcp3008Driver"
 

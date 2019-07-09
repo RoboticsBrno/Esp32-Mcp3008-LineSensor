@@ -1,13 +1,17 @@
 #include <cmath>
 #include <esp_log.h>
 
-#include "linesensor.h"
+#include "mcp3008_linesensor.h"
 
 #define TAG "Mcp3008LineSensor"
 
 namespace mcp3008 {
 
 LineSensor::LineSensor() : Driver() {
+    for(int i = 0; i < Driver::CHANNELS; ++i) {
+        m_calibration.min[i] = 0;
+        m_calibration.range[i] = Driver::MAX_VAL;
+    }
 }
 
 LineSensor::~LineSensor() {

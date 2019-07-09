@@ -3,7 +3,7 @@
 #include <vector>
 #include <driver/spi_master.h>
 
-#include "driver.h"
+#include "mcp3008_driver.h"
 
 namespace mcp3008 {
 
@@ -24,16 +24,9 @@ public:
      * use LineSensorCalibrator instead.
      */
     struct CalibrationData {
-        CalibrationData() {
-            for(int i = 0; i < Driver::CHANNELS; ++i) {
-                min[i] = 0;
-                range[i] = Driver::MAX_VAL;
-            }
-        }
-
         uint16_t min[Driver::CHANNELS];
         uint16_t range[Driver::CHANNELS];
-    };
+    } __attribute__((packed));
 
     LineSensor();
     virtual ~LineSensor();
