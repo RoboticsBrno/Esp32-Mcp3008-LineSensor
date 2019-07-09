@@ -62,9 +62,12 @@ float LineSensor::readLine(bool white_line, float noise_limit, float line_thresh
 
 bool LineSensor::setCalibration(const LineSensor::CalibrationData& data) {
     for(int i = 0; i < Driver::CHANNELS; ++i) {
+        if((getChannelsMask() & (1 << i)) == 0)
+            continue;
         if(data.min[i] > Driver::MAX_VAL || data.range[i] > Driver::MAX_VAL ||
-            data.min[i] + m_calibration.range[i] > Driver::MAX_VAL) {
-            ESP_LOGE(TAG, "invalid data in setCalibration at channel %d, ignoring calibration!", i);
+            (data.min[i] + data.range[i]) > Driver::MAX_VAL) {
+            ESP_LOGE(TAG, "invalid data in setCalibration at channel %d: %hu+%hu, ignoring calibration!",
+                i, data.min[i], data.range[i]);
             return false;
         }
     }
