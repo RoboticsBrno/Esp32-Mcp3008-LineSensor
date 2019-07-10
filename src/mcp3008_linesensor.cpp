@@ -22,10 +22,10 @@ LineSensorCalibrator LineSensor::startCalibration() {
     return LineSensorCalibrator(*this);
 }
 
-float LineSensor::readLine(bool white_line, float noise_limit, float line_threshold) const {
+float LineSensor::readLine(bool white_line, float line_threshold) const {
     std::vector<uint16_t> vals;
     auto res = this->calibratedRead(vals);
-    if(res != ESP_OK) {
+    if(res != ESP_OK || vals.size() == 0) {
         ESP_LOGE(TAG, "read() failed: %d", res);
         return std::nanf("");
     }
@@ -33,30 +33,42 @@ float LineSensor::readLine(bool white_line, float noise_limit, float line_thresh
     uint32_t weighted = 0;
     uint16_t sum = 0;
 
-    const uint16_t noise = noise_limit * MAX_VAL;
     const uint16_t threshold = line_threshold * MAX_VAL;
 
-    bool on_line = false;
+    uint16_t min = MAX_VAL;
+    uint16_t max = 0;
     for(size_t i = 0; i < vals.size(); ++i) {
         auto val = vals[i];
         if(white_line)
             val = MAX_VAL - val;
 
-        if(val < noise)
-            continue;
+        if(val < min)
+            min = val;
+        if(val > max)
+            max = val;
+    }
 
-        if(val >= threshold)
-            on_line = true;
+    const uint16_t range = max - min;
+    if(max < threshold || range < threshold)
+        return std::nanf("");
+
+    for(size_t i = 0; i < vals.size(); ++i) {
+        auto val = vals[i];
+        if(white_line)
+            val = MAX_VAL - val;
+
+        val = float(val - min)/range * MAX_VAL;
 
         weighted += uint32_t(val) * i * MAX_VAL;
         sum += val;
     }
 
-    if(sum == 0 || !on_line)
+    if(sum == 0)
         return std::nanf("");
 
     const int16_t middle = float(vals.size()-1)/2 * MAX_VAL;
     const int16_t result = (weighted / sum) - middle;
+
     return std::min(1.f, std::max(-1.f, float(result) / float(middle)));
 }
 

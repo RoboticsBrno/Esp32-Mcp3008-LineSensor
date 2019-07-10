@@ -58,8 +58,6 @@ public:
      * \brief Try to determine a black line's position under the sensors.
      *
      * \param white_line the line is white on black background instead of default black on white background.
-     * \param noise_limit values below this threshold will be considered noise and ignored.
-     *        The value is a fraction, 0.05 == 5% == (1023*0.05) == values < ~50 will be ignored.
      * \param line_threshold values above this threshild will be considered "on the line".
      *        At least one sensor has to have value above this threshold, otherwise NaN is returned.
      *        The value is a fraction, 0.20 == 20% == (1023*0.20) == 200.
@@ -71,7 +69,7 @@ public:
      *              1.0: under channel 7 \n
      *         Returns NaN when the line is not found (see \p line_threshold).
      */
-    float readLine(bool white_line = false, float noise_limit=0.05f, float line_threshold=0.20f) const;
+    float readLine(bool white_line = false, float line_threshold=0.20f) const;
 
     /**
      * \brief Same as Driver::read(), but returns calibrated result if possible
