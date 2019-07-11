@@ -27,7 +27,7 @@ float LineSensor::readLine(bool white_line, float line_threshold) const {
     auto res = this->calibratedRead(vals);
     if(res != ESP_OK || vals.size() == 0) {
         ESP_LOGE(TAG, "read() failed: %d", res);
-        return std::nanf("");
+        return nanf("");
     }
 
     uint32_t weighted = 0;
@@ -50,7 +50,7 @@ float LineSensor::readLine(bool white_line, float line_threshold) const {
 
     const uint16_t range = max - min;
     if(max < threshold || range < threshold)
-        return std::nanf("");
+        return nanf("");
 
     for(size_t i = 0; i < vals.size(); ++i) {
         auto val = vals[i];
@@ -64,7 +64,7 @@ float LineSensor::readLine(bool white_line, float line_threshold) const {
     }
 
     if(sum == 0)
-        return std::nanf("");
+        return nanf("");
 
     const int16_t middle = float(vals.size()-1)/2 * MAX_VAL;
     const int16_t result = (weighted / sum) - middle;
