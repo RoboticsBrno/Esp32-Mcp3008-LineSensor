@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <driver/spi_master.h>
+#include <vector>
 
 #include "mcp3008_driver.h"
 
@@ -69,7 +69,7 @@ public:
      *              1.0: under channel 7 \n
      *         Returns NaN when the line is not found (see \p line_threshold).
      */
-    float readLine(bool white_line = false, float line_threshold=0.20f) const;
+    float readLine(bool white_line = false, float line_threshold = 0.20f) const;
 
     /**
      * \brief Same as Driver::read(), but returns calibrated result if possible
@@ -87,7 +87,7 @@ public:
      *
      * \param dest array MUST be big enough to accomodate all the channels specified by Config::channels_mask!
      */
-    esp_err_t calibratedRead(uint16_t *dest) const;
+    esp_err_t calibratedRead(uint16_t* dest) const;
 
     /**
      * \brief Same as Driver::readChannel(), but returns calibrated data.
@@ -95,12 +95,12 @@ public:
      * \param result result code will be written here, may be null.
      * \return measured value or 0xFFFF on error.
      */
-    uint16_t calibratedReadChannel(uint8_t channel, esp_err_t *result = nullptr) const;
+    uint16_t calibratedReadChannel(uint8_t channel, esp_err_t* result = nullptr) const;
 
 private:
     LineSensor(const LineSensor&) = delete;
 
-    void calibrateResults(uint16_t *dest) const;
+    void calibrateResults(uint16_t* dest) const;
     inline uint16_t calibrateValue(int chan, uint16_t val) const;
 
     CalibrationData m_calibration;
@@ -123,6 +123,7 @@ private:
  */
 class LineSensorCalibrator {
     friend class LineSensor;
+
 public:
     ~LineSensorCalibrator();
 

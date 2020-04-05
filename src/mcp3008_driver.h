@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <driver/spi_master.h>
+#include <vector>
 
 namespace mcp3008 {
 
@@ -37,7 +37,7 @@ public:
         int freq; //!< SPI communication frequency
         spi_host_device_t spi_dev; //!< Which ESP32 SPI device to use.
         uint8_t channels_mask; //!< Which channels to use, bit mask:
-                               //!< (1 << 0) | (1 << 2) == channels 0 and 2 only.
+            //!< (1 << 0) | (1 << 2) == channels 0 and 2 only.
 
         gpio_num_t pin_cs;
         gpio_num_t pin_mosi;
@@ -85,7 +85,7 @@ public:
      *
      * \param dest array MUST be big enough to accomodate all the channels specified by Config::channels_mask!
      */
-    esp_err_t read(uint16_t *dest, bool differential = false) const;
+    esp_err_t read(uint16_t* dest, bool differential = false) const;
 
     /**
      * \brief Read a single channel from the chip. Returns value is in range <0; Driver::MAX_VAL>.
@@ -94,7 +94,7 @@ public:
      * \param result result code will be written here, may be null.
      * \return measured value or 0xFFFF on error.
      */
-    uint16_t readChannel(uint8_t channel, bool differential = false, esp_err_t *result = nullptr) const;
+    uint16_t readChannel(uint8_t channel, bool differential = false, esp_err_t* result = nullptr) const;
 
 protected:
     int requestToChannel(int request) const;
