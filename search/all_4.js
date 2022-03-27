@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['getcalibration_9',['getCalibration',['../classmcp3008_1_1LineSensor.html#a17ef52725e9f47ea719c45ecf2678382',1,'mcp3008::LineSensor']]],
-  ['getchannelsmask_10',['getChannelsMask',['../classmcp3008_1_1Driver.html#ab320974c74acce97719c9ea2dbe4e906',1,'mcp3008::Driver']]]
+  ['getcalibration_0',['getCalibration',['../classmcp3008_1_1LineSensor.html#a10ffd959f1e057bb4eb4fa373a923041',1,'mcp3008::LineSensor']]],
+  ['getchannelsmask_1',['getChannelsMask',['../classmcp3008_1_1Driver.html#ab320974c74acce97719c9ea2dbe4e906',1,'mcp3008::Driver']]]
 ];
