@@ -1,6 +1,7 @@
 #pragma once
 
 #include <driver/spi_master.h>
+#include <driver/gpio.h>
 #include <vector>
 
 namespace mcp3008 {
